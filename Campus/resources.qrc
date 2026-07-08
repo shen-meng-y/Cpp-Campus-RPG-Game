@@ -1,0 +1,61 @@
+<RCC>
+    <qresource prefix="/avatar">
+        <file alias="bg_room.png">assets/avatar/bg_room.png</file>
+
+        <file alias="person1.png">assets/avatar/person1.png</file>
+        <file alias="person2.png">assets/avatar/person2.png</file>
+        <file alias="person3.png">assets/avatar/person3.png</file>
+
+        <file alias="dress1.png">assets/avatar/dress1.png</file>
+        <file alias="dress2.png">assets/avatar/dress2.png</file>
+        <file alias="dress3.png">assets/avatar/dress3.png</file>
+        <file alias="dress4.png">assets/avatar/dress4.png</file>
+        <file alias="dress5.png">assets/avatar/dress5.png</file>
+        <file alias="dress6.png">assets/avatar/dress6.png</file>
+        <file alias="dress7.png">assets/avatar/dress7.png</file>
+        <file alias="dress8.png">assets/avatar/dress8.png</file>
+        <file alias="dress9.png">assets/avatar/dress9.png</file>
+        <file alias="dress10.png">assets/avatar/dress10.png</file>
+
+        <file alias="dress1_thumb.png">assets/avatar/dress1_thumb.png</file>
+        <file alias="dress2_thumb.png">assets/avatar/dress2_thumb.png</file>
+        <file alias="dress3_thumb.png">assets/avatar/dress3_thumb.png</file>
+        <file alias="dress4_thumb.png">assets/avatar/dress4_thumb.png</file>
+        <file alias="dress5_thumb.png">assets/avatar/dress5_thumb.png</file>
+        <file alias="dress6_thumb.png">assets/avatar/dress6_thumb.png</file>
+        <file alias="dress7_thumb.png">assets/avatar/dress7_thumb.png</file>
+        <file alias="dress8_thumb.png">assets/avatar/dress8_thumb.png</file>
+        <file alias="dress9_thumb.png">assets/avatar/dress9_thumb.png</file>
+        <file alias="dress10_thumb.png">assets/avatar/dress10_thumb.png</file>
+
+        <file alias="hair1.png">assets/avatar/hair1.png</file>
+        <file alias="hair2.png">assets/avatar/hair2.png</file>
+        <file alias="hair3.png">assets/avatar/hair3.png</file>
+        <file alias="hair4.png">assets/avatar/hair4.png</file>
+        <file alias="hair5.png">assets/avatar/hair5.png</file>
+        <file alias="hair6.png">assets/avatar/hair6.png</file>
+        <file alias="hair7.png">assets/avatar/hair7.png</file>
+        <file alias="hair8.png">assets/avatar/hair8.png</file>
+        <file alias="hair9.png">assets/avatar/hair9.png</file>
+
+        <file alias="hair1_thumb.png">assets/avatar/hair1_thumb.png</file>
+        <file alias="hair2_thumb.png">assets/avatar/hair2_thumb.png</file>
+        <file alias="hair3_thumb.png">assets/avatar/hair3_thumb.png</file>
+        <file alias="hair4_thumb.png">assets/avatar/hair4_thumb.png</file>
+        <file alias="hair5_thumb.png">assets/avatar/hair5_thumb.png</file>
+        <file alias="hair6_thumb.png">assets/avatar/hair6_thumb.png</file>
+        <file alias="hair7_thumb.png">assets/avatar/hair7_thumb.png</file>
+        <file alias="hair8_thumb.png">assets/avatar/hair8_thumb.png</file>
+        <file alias="hair9_thumb.png">assets/avatar/hair9_thumb.png</file>
+
+        <file alias="shoe1.png">assets/avatar/shoe1.png</file>
+        <file alias="shoe2.png">assets/avatar/shoe2.png</file>
+        <file alias="shoe3.png">assets/avatar/shoe3.png</file>
+        <file alias="shoe4.png">assets/avatar/shoe4.png</file>
+
+        <file alias="shoe1_thumb.png">assets/avatar/shoe1_thumb.png</file>
+        <file alias="shoe2_thumb.png">assets/avatar/shoe2_thumb.png</file>
+        <file alias="shoe3_thumb.png">assets/avatar/shoe3_thumb.png</file>
+        <file alias="shoe4_thumb.png">assets/avatar/shoe4_thumb.png</file>
+    </qresource>
+</RCC>
