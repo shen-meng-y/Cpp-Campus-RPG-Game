@@ -1,0 +1,750 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1556</width>
+    <height>829</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <property name="styleSheet">
+    <string notr="true">#centralWidget {
+    background-color: #f3f8ff;
+}</string>
+   </property>
+   <widget class="QFrame" name="mainFrame">
+    <property name="geometry">
+     <rect>
+      <x>-1</x>
+      <y>9</y>
+      <width>1511</width>
+      <height>831</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">#mainFrame {
+    background-color: rgba(255, 255, 255, 235);
+    border: 1px solid #b8cce6;
+    border-radius: 16px;
+}</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::StyledPanel</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Shadow::Raised</enum>
+    </property>
+    <widget class="QGroupBox" name="groupRoleInfo">
+     <property name="geometry">
+      <rect>
+       <x>9</x>
+       <y>-11</y>
+       <width>401</width>
+       <height>751</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">#groupRoleInfo,
+#groupMenu,
+#groupList,
+#groupLog {
+    font-size: 26px;
+    font-weight: bold;
+    color: #064f95;
+
+    border: 6px solid #6fa8dc;
+    border-radius: 20px;
+
+    margin-top: 34px;
+    padding-top: 26px;
+
+    background-color: rgba(255, 255, 255, 235);
+}
+
+#groupRoleInfo::title,
+#groupMenu::title,
+#groupList::title,
+#groupLog::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+
+    left: 26px;
+    top: 6px;
+
+    padding: 0 18px;
+
+    color: #064f95;
+    background-color: #f3f8ff;
+}</string>
+     </property>
+     <property name="title">
+      <string>角色状态</string>
+     </property>
+     <widget class="QLabel" name="label">
+      <property name="geometry">
+       <rect>
+        <x>21</x>
+        <y>51</y>
+        <width>75</width>
+        <height>19</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>角色名称：</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="labelRoleName">
+      <property name="geometry">
+       <rect>
+        <x>90</x>
+        <y>50</y>
+        <width>69</width>
+        <height>19</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>-</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_2">
+      <property name="geometry">
+       <rect>
+        <x>181</x>
+        <y>51</y>
+        <width>75</width>
+        <height>19</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>当前形态：</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_3">
+      <property name="geometry">
+       <rect>
+        <x>21</x>
+        <y>81</y>
+        <width>45</width>
+        <height>19</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>等级：</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_4">
+      <property name="geometry">
+       <rect>
+        <x>21</x>
+        <y>111</y>
+        <width>60</width>
+        <height>19</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>生命值：</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_5">
+      <property name="geometry">
+       <rect>
+        <x>21</x>
+        <y>151</y>
+        <width>60</width>
+        <height>19</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>经验值：</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_6">
+      <property name="geometry">
+       <rect>
+        <x>181</x>
+        <y>81</y>
+        <width>45</width>
+        <height>19</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>金币：</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_7">
+      <property name="geometry">
+       <rect>
+        <x>21</x>
+        <y>201</y>
+        <width>60</width>
+        <height>19</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>攻击力：</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_8">
+      <property name="geometry">
+       <rect>
+        <x>181</x>
+        <y>201</y>
+        <width>94</width>
+        <height>19</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>击败敌人数： </string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="labelStage">
+      <property name="geometry">
+       <rect>
+        <x>263</x>
+        <y>51</y>
+        <width>71</width>
+        <height>19</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>-</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="labelLevel">
+      <property name="geometry">
+       <rect>
+        <x>73</x>
+        <y>81</y>
+        <width>71</width>
+        <height>19</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>-</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="labelHp">
+      <property name="geometry">
+       <rect>
+        <x>88</x>
+        <y>111</y>
+        <width>81</width>
+        <height>19</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>-</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="labelExp">
+      <property name="geometry">
+       <rect>
+        <x>88</x>
+        <y>151</y>
+        <width>81</width>
+        <height>19</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>-</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="labelGold">
+      <property name="geometry">
+       <rect>
+        <x>233</x>
+        <y>81</y>
+        <width>81</width>
+        <height>19</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>-</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="labelAttack">
+      <property name="geometry">
+       <rect>
+        <x>88</x>
+        <y>201</y>
+        <width>16</width>
+        <height>19</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>-</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="labelKillCount">
+      <property name="geometry">
+       <rect>
+        <x>282</x>
+        <y>201</y>
+        <width>16</width>
+        <height>19</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>-</string>
+      </property>
+     </widget>
+     <widget class="QGroupBox" name="groupBox">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>240</y>
+        <width>351</width>
+        <height>451</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QGroupBox {
+    font-size: 28px;
+    font-weight: bold;
+    color: #6a4c93;
+
+    border: 8px solid #cdb4db;
+    border-radius: 22px;
+
+    margin-top: 40px;
+    padding-top: 32px;
+
+    background-color: rgba(255, 255, 255, 240);
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+
+    left: 30px;
+    top: 8px;
+
+    padding: 0 20px;
+
+    color: #6a4c93;
+    background-color: white;
+}</string>
+      </property>
+      <property name="title">
+       <string>人物形象</string>
+      </property>
+      <widget class="QLabel" name="labelAvatar">
+       <property name="geometry">
+        <rect>
+         <x>40</x>
+         <y>90</y>
+         <width>260</width>
+         <height>300</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="scaledContents">
+        <bool>true</bool>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignmentFlag::AlignCenter</set>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QProgressBar" name="progressHp">
+      <property name="geometry">
+       <rect>
+        <x>180</x>
+        <y>110</y>
+        <width>171</width>
+        <height>27</height>
+       </rect>
+      </property>
+      <property name="value">
+       <number>100</number>
+      </property>
+      <property name="format">
+       <string>%v / %m</string>
+      </property>
+     </widget>
+     <widget class="QProgressBar" name="progressExp">
+      <property name="geometry">
+       <rect>
+        <x>180</x>
+        <y>150</y>
+        <width>171</width>
+        <height>27</height>
+       </rect>
+      </property>
+      <property name="value">
+       <number>100</number>
+      </property>
+      <property name="format">
+       <string>%v / %m</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="labelGameTime">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>710</y>
+        <width>281</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>游戏时间：00:00:00</string>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QGroupBox" name="groupMenu">
+     <property name="geometry">
+      <rect>
+       <x>419</x>
+       <y>-11</y>
+       <width>411</width>
+       <height>461</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">#groupRoleInfo,
+#groupMenu,
+#groupList,
+#groupLog {
+    font-size: 26px;
+    font-weight: bold;
+    color: #064f95;
+
+    border: 6px solid #6fa8dc;
+    border-radius: 20px;
+
+    margin-top: 34px;
+    padding-top: 26px;
+
+    background-color: rgba(255, 255, 255, 235);
+}
+
+#groupRoleInfo::title,
+#groupMenu::title,
+#groupList::title,
+#groupLog::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+
+    left: 26px;
+    top: 6px;
+
+    padding: 0 18px;
+
+    color: #064f95;
+    background-color: #f3f8ff;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    left: 16px;
+    padding: 0 8px;
+    background-color: transparent;
+}</string>
+     </property>
+     <property name="title">
+      <string>功能操作</string>
+     </property>
+     <widget class="QPushButton" name="btnCreateRole">
+      <property name="geometry">
+       <rect>
+        <x>52</x>
+        <y>67</y>
+        <width>111</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>创建角色</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btnBackpack">
+      <property name="geometry">
+       <rect>
+        <x>232</x>
+        <y>67</y>
+        <width>111</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>背包管理</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btnShop">
+      <property name="geometry">
+       <rect>
+        <x>50</x>
+        <y>140</y>
+        <width>111</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>商店系统</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btnQuest">
+      <property name="geometry">
+       <rect>
+        <x>232</x>
+        <y>140</y>
+        <width>111</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>任务系统</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btnBattle">
+      <property name="geometry">
+       <rect>
+        <x>50</x>
+        <y>220</y>
+        <width>111</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>校园试炼</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btnGrowth">
+      <property name="geometry">
+       <rect>
+        <x>232</x>
+        <y>220</y>
+        <width>111</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>成长训练</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btnHospital">
+      <property name="geometry">
+       <rect>
+        <x>50</x>
+        <y>300</y>
+        <width>111</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>急救中心</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btnSave">
+      <property name="geometry">
+       <rect>
+        <x>232</x>
+        <y>300</y>
+        <width>111</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>保存游戏</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btnLoad">
+      <property name="geometry">
+       <rect>
+        <x>142</x>
+        <y>387</y>
+        <width>111</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>读取存档</string>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QGroupBox" name="groupList">
+     <property name="geometry">
+      <rect>
+       <x>839</x>
+       <y>-11</y>
+       <width>661</width>
+       <height>461</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">#groupRoleInfo,
+#groupMenu,
+#groupList,
+#groupLog {
+    font-size: 26px;
+    font-weight: bold;
+    color: #064f95;
+
+    border: 6px solid #6fa8dc;
+    border-radius: 20px;
+
+    margin-top: 34px;
+    padding-top: 26px;
+
+    background-color: rgba(255, 255, 255, 235);
+}
+
+#groupRoleInfo::title,
+#groupMenu::title,
+#groupList::title,
+#groupLog::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+
+    left: 26px;
+    top: 6px;
+
+    padding: 0 18px;
+
+    color: #064f95;
+    background-color: #f3f8ff;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    left: 16px;
+    padding: 0 8px;
+    background-color: transparent;
+}</string>
+     </property>
+     <property name="title">
+      <string>通用列表</string>
+     </property>
+     <widget class="QListWidget" name="listWidget">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>60</y>
+        <width>601</width>
+        <height>281</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btnAction1">
+      <property name="geometry">
+       <rect>
+        <x>220</x>
+        <y>360</y>
+        <width>251</width>
+        <height>28</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>使用 / 购买 / 接受 / 攻击 / 治疗</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btnAction2">
+      <property name="geometry">
+       <rect>
+        <x>220</x>
+        <y>410</y>
+        <width>251</width>
+        <height>28</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>删除 / 出售 / 领奖 / 逃跑 / 查看</string>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QGroupBox" name="groupLog">
+     <property name="geometry">
+      <rect>
+       <x>429</x>
+       <y>449</y>
+       <width>1071</width>
+       <height>301</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">#groupRoleInfo,
+#groupMenu,
+#groupList,
+#groupLog {
+    font-size: 26px;
+    font-weight: bold;
+    color: #064f95;
+
+    border: 6px solid #6fa8dc;
+    border-radius: 20px;
+
+    margin-top: 34px;
+    padding-top: 26px;
+
+    background-color: rgba(255, 255, 255, 235);
+}
+
+#groupRoleInfo::title,
+#groupMenu::title,
+#groupList::title,
+#groupLog::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+
+    left: 26px;
+    top: 6px;
+
+    padding: 0 18px;
+
+    color: #064f95;
+    background-color: #f3f8ff;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    left: 16px;
+    padding: 0 8px;
+    background-color: transparent;
+}</string>
+     </property>
+     <property name="title">
+      <string>日志</string>
+     </property>
+     <widget class="QTextEdit" name="textLog">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>50</y>
+        <width>1021</width>
+        <height>221</height>
+       </rect>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </widget>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1556</width>
+     <height>25</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
