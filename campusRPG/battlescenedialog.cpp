@@ -38,7 +38,9 @@ BattleSceneDialog::BattleSceneDialog(
     playerHpBar(nullptr),
     enemyHpBar(nullptr),
     battleLog(nullptr),
-    attackButton(nullptr),
+    normalAttackButton(nullptr),
+    middleSkillButton(nullptr),
+    ultimateSkillButton(nullptr),
     escapeButton(nullptr) {
     setupUi();
     updateBattleStatus();
@@ -189,13 +191,20 @@ void BattleSceneDialog::setupUi() {
 
     QHBoxLayout* buttonLayout = new QHBoxLayout();
 
-    attackButton = new QPushButton("攻击", this);
+    normalAttackButton = new QPushButton("普通攻击", this);
+    middleSkillButton = new QPushButton("知识连击", this);
+    ultimateSkillButton = new QPushButton("期末爆发", this);
     escapeButton = new QPushButton("逃跑", this);
 
-    attackButton->setFixedHeight(46);
+    normalAttackButton->setFixedHeight(46);
+    middleSkillButton->setFixedHeight(46);
+    ultimateSkillButton->setFixedHeight(46);
     escapeButton->setFixedHeight(46);
 
-    attackButton->setStyleSheet(
+    middleSkillButton->setToolTip("中级形态解锁：造成 1.5 倍攻击 + 10 点伤害。");
+    ultimateSkillButton->setToolTip("终极形态解锁：造成 2 倍攻击 + 30 点伤害。");
+
+    QString attackButtonStyle =
         "QPushButton {"
         "   font-size: 18px;"
         "   font-weight: bold;"
@@ -213,8 +222,11 @@ void BattleSceneDialog::setupUi() {
         "QPushButton:disabled {"
         "   background-color: #dddddd;"
         "   color: #999999;"
-        "}"
-        );
+        "}";
+
+    normalAttackButton->setStyleSheet(attackButtonStyle);
+    middleSkillButton->setStyleSheet(attackButtonStyle);
+    ultimateSkillButton->setStyleSheet(attackButtonStyle);
 
     escapeButton->setStyleSheet(
         "QPushButton {"
@@ -233,10 +245,18 @@ void BattleSceneDialog::setupUi() {
         "}"
         );
 
-    connect(attackButton, &QPushButton::clicked, this, &BattleSceneDialog::handleAttack);
+    int stageValue = player.getEvolutionStageValue();
+    middleSkillButton->setVisible(stageValue >= 1);
+    ultimateSkillButton->setVisible(stageValue >= 2);
+
+    connect(normalAttackButton, &QPushButton::clicked, this, &BattleSceneDialog::handleNormalAttack);
+    connect(middleSkillButton, &QPushButton::clicked, this, &BattleSceneDialog::handleMiddleSkill);
+    connect(ultimateSkillButton, &QPushButton::clicked, this, &BattleSceneDialog::handleUltimateSkill);
     connect(escapeButton, &QPushButton::clicked, this, &BattleSceneDialog::handleEscape);
 
-    buttonLayout->addWidget(attackButton);
+    buttonLayout->addWidget(normalAttackButton);
+    buttonLayout->addWidget(middleSkillButton);
+    buttonLayout->addWidget(ultimateSkillButton);
     buttonLayout->addWidget(escapeButton);
 
     mainLayout->addWidget(sceneFrame);
@@ -251,22 +271,80 @@ void BattleSceneDialog::setupUi() {
         );
 
     appendBattleLog("战斗开始！你遇到了 " + QString::fromStdString(enemy.getName()) + "。");
+
+    QString skillText = "普通攻击";
+    if (player.getEvolutionStageValue() >= 1) {
+        skillText += "、知识连击";
+    }
+    if (player.getEvolutionStageValue() >= 2) {
+        skillText += "、期末爆发";
+    }
+
+    appendBattleLog("当前可用技能：" + skillText + "。");
 }
 
-void BattleSceneDialog::handleAttack() {
+void BattleSceneDialog::handleNormalAttack() {
+    performPlayerSkill(
+        "普通攻击",
+        player.getAttack(),
+        "稳定出手"
+        );
+}
+
+void BattleSceneDialog::handleMiddleSkill() {
+    if (player.getEvolutionStageValue() < 1) {
+        appendBattleLog("当前形态还没有解锁【知识连击】。");
+        return;
+    }
+
+    int damage = player.getAttack() * 3 / 2 + 10;
+
+    performPlayerSkill(
+        "知识连击",
+        damage,
+        "把复习资料连成一套组合拳"
+        );
+}
+
+void BattleSceneDialog::handleUltimateSkill() {
+    if (player.getEvolutionStageValue() < 2) {
+        appendBattleLog("当前形态还没有解锁【期末爆发】。");
+        return;
+    }
+
+    int damage = player.getAttack() * 2 + 30;
+
+    performPlayerSkill(
+        "期末爆发",
+        damage,
+        "进入终极冲刺状态"
+        );
+}
+
+void BattleSceneDialog::performPlayerSkill(
+    const QString& skillName,
+    int damage,
+    const QString& extraText
+    ) {
     if (battleEnded) {
         return;
     }
 
-    enemy.takeDamage(player.getAttack());
+    enemy.takeDamage(damage);
 
-    appendBattleLog(
-        "你发动攻击，对 "
-        + QString::fromStdString(enemy.getName())
-        + " 造成 "
-        + QString::number(player.getAttack())
-        + " 点伤害。"
-        );
+    QString logText = "你使用【" + skillName + "】";
+
+    if (!extraText.isEmpty()) {
+        logText += "，" + extraText;
+    }
+
+    logText += "，对 "
+               + QString::fromStdString(enemy.getName())
+               + " 造成 "
+               + QString::number(damage)
+               + " 点伤害。";
+
+    appendBattleLog(logText);
 
     updateBattleStatus();
 
@@ -276,11 +354,15 @@ void BattleSceneDialog::handleAttack() {
 
         appendBattleLog("战斗胜利！你击败了 " + QString::fromStdString(enemy.getName()) + "。");
 
-        attackButton->setEnabled(false);
+        setSkillButtonsEnabled(false);
         escapeButton->setText("结束战斗");
         return;
     }
 
+    handleEnemyCounterAttack();
+}
+
+void BattleSceneDialog::handleEnemyCounterAttack() {
     player.takeDamage(enemy.getAttack());
 
     appendBattleLog(
@@ -298,7 +380,7 @@ void BattleSceneDialog::handleAttack() {
 
         appendBattleLog("战斗失败，你被击败了。");
 
-        attackButton->setEnabled(false);
+        setSkillButtonsEnabled(false);
         escapeButton->setText("返回");
         return;
     }
@@ -315,7 +397,7 @@ void BattleSceneDialog::handleEscape() {
 
     appendBattleLog("你选择了逃跑，战斗结束。");
 
-    attackButton->setEnabled(false);
+    setSkillButtonsEnabled(false);
     escapeButton->setText("返回");
 }
 
@@ -393,6 +475,20 @@ QString BattleSceneDialog::hpBarStyle(int currentHp, int maxHp) const {
                "   background-color: %1;"
                "}"
                ).arg(color);
+}
+
+void BattleSceneDialog::setSkillButtonsEnabled(bool enabled) {
+    if (normalAttackButton) {
+        normalAttackButton->setEnabled(enabled);
+    }
+
+    if (middleSkillButton) {
+        middleSkillButton->setEnabled(enabled && player.getEvolutionStageValue() >= 1);
+    }
+
+    if (ultimateSkillButton) {
+        ultimateSkillButton->setEnabled(enabled && player.getEvolutionStageValue() >= 2);
+    }
 }
 
 void BattleSceneDialog::appendBattleLog(const QString& text) {

@@ -64,14 +64,21 @@ private:
 
     QTextEdit* battleLog;
 
-    QPushButton* attackButton;
+    QPushButton* normalAttackButton;
+    QPushButton* middleSkillButton;
+    QPushButton* ultimateSkillButton;
     QPushButton* escapeButton;
 
 private:
     void setupUi();
     void updateBattleStatus();
-    void handleAttack();
+    void handleNormalAttack();
+    void handleMiddleSkill();
+    void handleUltimateSkill();
     void handleEscape();
+    void performPlayerSkill(const QString& skillName, int damage, const QString& extraText);
+    void handleEnemyCounterAttack();
+    void setSkillButtonsEnabled(bool enabled);
     void appendBattleLog(const QString& text);
 
     QString imagePath(const QString& fileName) const;

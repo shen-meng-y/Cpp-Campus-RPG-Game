@@ -97,6 +97,7 @@ private:
     void saveGame();
     void loadGame();
     void initStyle();
+    void showSkillUnlockMessage(int stageValue);
 private slots:
     void doAutoSave();
     void onAutoSaveFinished(bool success, const QString &message);
