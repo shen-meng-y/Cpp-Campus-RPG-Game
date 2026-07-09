@@ -265,6 +265,32 @@ void MainWindow::addLog(const QString& text) {
     ui->textLog->append("◆ " + text);
 }
 
+void MainWindow::showSkillUnlockMessage(int stageValue) {
+    if (stageValue == 1) {
+        QMessageBox::information(
+            this,
+            "解锁新技能",
+            "恭喜！你已经进化为【中级形态】。\n\n"
+            "解锁新技能：【知识连击】\n"
+            "技能效果：造成 1.5 倍攻击 + 10 点伤害。\n\n"
+            "现在进入战斗时，除了【普通攻击】，还可以使用【知识连击】。"
+            );
+
+        addLog("解锁新技能：知识连击。");
+    } else if (stageValue == 2) {
+        QMessageBox::information(
+            this,
+            "解锁新技能",
+            "恭喜！你已经进化为【终极形态】。\n\n"
+            "解锁新技能：【期末爆发】\n"
+            "技能效果：造成 2 倍攻击 + 30 点伤害。\n\n"
+            "现在进入战斗时，可以使用【普通攻击】、【知识连击】和【期末爆发】。"
+            );
+
+        addLog("解锁新技能：期末爆发。");
+    }
+}
+
 void MainWindow::refreshQuests() {
     for (Quest& quest : quests) {
         quest.checkComplete(player, killCount);
@@ -507,7 +533,7 @@ void MainWindow::showGrowthList() {
     ui->btnAction2->setText("查看成长");
 
     ui->listWidget->addItem("1. 训练：获得经验值");
-    ui->listWidget->addItem("2. 进化：达到等级后提升形态");
+    ui->listWidget->addItem("2. 进化：达到等级后提升形态并解锁技能");
 
     addLog("已打开成长训练。");
 }
@@ -606,13 +632,19 @@ void MainWindow::handleAction1() {
             if (!player.canEvolve()) {
                 QMessageBox::information(this, "进化失败", "当前等级不足，暂时无法进化。");
             } else {
+                int oldStageValue = player.getEvolutionStageValue();
                 QString oldStage = QString::fromStdString(player.getEvolutionStageName());
 
                 player.evolve();
 
+                int newStageValue = player.getEvolutionStageValue();
                 QString newStage = QString::fromStdString(player.getEvolutionStageName());
 
                 addLog("进化成功：" + oldStage + " → " + newStage);
+
+                if (newStageValue != oldStageValue) {
+                    showSkillUnlockMessage(newStageValue);
+                }
             }
         }
 
@@ -775,6 +807,23 @@ void MainWindow::handleAction2() {
         info += "最大生命值：" + QString::number(player.getMaxHp()) + "\n";
         info += "基础攻击力：" + QString::number(player.getBaseAttack()) + "\n";
         info += "总攻击力：" + QString::number(player.getAttack()) + "\n";
+
+        info += "\n当前战斗技能：\n";
+        info += "普通攻击：造成当前总攻击力伤害。\n";
+
+        if (player.getEvolutionStageValue() >= 1) {
+            info += "知识连击：造成 1.5 倍攻击 + 10 点伤害。\n";
+        } else {
+            info += "知识连击：中级形态解锁。\n";
+        }
+
+        if (player.getEvolutionStageValue() >= 2) {
+            info += "期末爆发：造成 2 倍攻击 + 30 点伤害。\n";
+        } else {
+            info += "期末爆发：终极形态解锁。\n";
+        }
+
+        info += "\n";
 
         if (player.canEvolve()) {
             info += "当前可以进化。";
