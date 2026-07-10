@@ -29,6 +29,7 @@ qt_add_executable(campusRPG
     randomeventworker.h randomeventworker.cpp
     backpackdialog.h backpackdialog.cpp
     questdialog.h questdialog.cpp
+    firstaidcenterdialog.h firstaidcenterdialog.cpp
 
 )
 
