@@ -7,6 +7,7 @@
 #include "battlemapdialog.h"
 #include "battlescenedialog.h"
 #include "questdialog.h"
+#include "firstaidcenterdialog.h"
 #include "gametimerworker.h"
 #include "randomeventworker.h"
 #include <QInputDialog>
@@ -158,8 +159,19 @@ void MainWindow::initConnections() {
     });
 
     connect(ui->btnHospital, &QPushButton::clicked, this, [this]() {
-        currentMode = PageMode::Hospital;
-        showHospitalList();
+        currentMode = PageMode::None;
+        addLog("已进入校园急救中心，等待医生诊断。");
+
+        FirstAidCenterDialog dialog(player, this);
+        dialog.exec();
+
+        if (dialog.treatmentPerformed()) {
+            addLog(dialog.treatmentSummary());
+        } else {
+            addLog("已离开校园急救中心。");
+        }
+
+        updateRoleStatus();
     });
 
     connect(ui->btnSave, &QPushButton::clicked, this, &MainWindow::saveGame);
