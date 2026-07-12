@@ -4,6 +4,7 @@
 #include "AvatarDressDialog.h"
 #include "AvatarRenderer.h"
 #include "backpackdialog.h"
+#include "shopdialog.h"
 #include "battlemapdialog.h"
 #include "battlescenedialog.h"
 #include "questdialog.h"
@@ -394,26 +395,28 @@ void MainWindow::showBackpackList() {
 
 void MainWindow::showShopList() {
     ui->listWidget->clear();
+    ui->listWidget->addItem("商店已升级为商品卡片与购物车窗口。");
+    ui->btnAction1->setText("选择操作");
+    ui->btnAction2->setText("辅助操作");
 
-    ui->btnAction1->setText("购买商品");
-    ui->btnAction2->setText("出售物品");
+    addLog("已打开商品卡片商店。");
 
-    const std::vector<Item>& goods = shop.getGoods();
+    ShopDialog dialog(shop, player, backpack, this);
 
-    for (int i = 0; i < static_cast<int>(goods.size()); i++) {
-        const Item& item = goods[i];
+    connect(&dialog, &ShopDialog::shopChanged, this, [this]() {
+        updateRoleStatus();
+    });
 
-        QString text = QString::number(i + 1) + ". "
-                       + QString::fromStdString(item.getName())
-                       + " | 类型：" + QString::fromStdString(Item::typeToString(item.getType()))
-                       + " | 价格：" + QString::number(item.getPrice())
-                       + " | 效果：" + QString::number(item.getEffectValue())
-                       + " | 说明：" + QString::fromStdString(item.getDescription());
+    connect(&dialog, &ShopDialog::logRequested,
+            this, [this](const QString &message) {
+                addLog(message);
+            });
 
-        ui->listWidget->addItem(text);
-    }
+    dialog.exec();
 
-    addLog("已打开商店系统。");
+    updateRoleStatus();
+    currentMode = PageMode::None;
+    addLog("已离开商店系统。");
 }
 
 void MainWindow::showQuestList() {
