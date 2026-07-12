@@ -30,6 +30,7 @@ qt_add_executable(campusRPG
     backpackdialog.h backpackdialog.cpp
     questdialog.h questdialog.cpp
     firstaidcenterdialog.h firstaidcenterdialog.cpp
+    shopdialog.h shopdialog.cpp
 
 )
 
