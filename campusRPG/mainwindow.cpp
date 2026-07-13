@@ -10,6 +10,7 @@
 #include "questdialog.h"
 #include "firstaidcenterdialog.h"
 #include "trainingdialog.h"
+#include "statisticsdialog.h"
 #include "gametimerworker.h"
 #include "randomeventworker.h"
 #include <QInputDialog>
@@ -21,6 +22,7 @@
 #include <QPropertyAnimation>
 #include <QEasingCurve>
 #include <QDebug>
+#include <algorithm>
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
     ui(new Ui::MainWindow),
@@ -29,6 +31,8 @@ MainWindow::MainWindow(QWidget *parent)
     quests(Quest::createDefaultQuests()),
     killCount(0),
     gameSeconds(0),
+    statisticsPlayBaseSeconds(0),
+    statisticsSessionStartSeconds(0),
     dailyStartKillCount(0),
     dailyStartLevel(1),
     hasCreatedRole(false),
@@ -60,6 +64,8 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    flushStatistics();
+
     if (autoSaveTimer) {
         autoSaveTimer->stop();
     }
@@ -115,6 +121,7 @@ void MainWindow::initConnections() {
         });
 
         dialog.exec();
+        recordCurrentGrowth("使用背包物品");
         updateRoleStatus();
     });
 
@@ -127,6 +134,7 @@ void MainWindow::initConnections() {
         currentMode = PageMode::Quest;
         refreshQuests();
 
+        const int goldBefore = player.getGold();
         QuestDialog dialog(quests, player, killCount, this);
 
         connect(&dialog, &QuestDialog::questChanged, this, [this]() {
@@ -140,6 +148,8 @@ void MainWindow::initConnections() {
 
         dialog.exec();
 
+        recordGoldTransaction(player.getGold() - goldBefore);
+        recordCurrentGrowth("任务奖励");
         refreshQuests();
         updateRoleStatus();
     });
@@ -164,6 +174,7 @@ void MainWindow::initConnections() {
         currentMode = PageMode::None;
         addLog("已进入校园急救中心，等待医生诊断。");
 
+        const int goldBefore = player.getGold();
         FirstAidCenterDialog dialog(player, this);
         dialog.exec();
 
@@ -173,9 +184,12 @@ void MainWindow::initConnections() {
             addLog("已离开校园急救中心。");
         }
 
+        recordGoldTransaction(player.getGold() - goldBefore);
         updateRoleStatus();
     });
 
+    connect(ui->btnStatistics, &QPushButton::clicked,
+            this, &MainWindow::openStatisticsDialog);
     connect(ui->btnSave, &QPushButton::clicked, this, &MainWindow::saveGame);
     connect(ui->btnLoad, &QPushButton::clicked, this, &MainWindow::loadGame);
 
@@ -306,8 +320,16 @@ void MainWindow::showSkillUnlockMessage(int stageValue) {
 }
 
 void MainWindow::refreshQuests() {
+    const int completedBefore = completedQuestCount();
+
     for (Quest& quest : quests) {
         quest.checkComplete(player, killCount);
+    }
+
+    if (hasCreatedRole) {
+        const int newlyCompleted =
+            std::max(0, completedQuestCount() - completedBefore);
+        statistics.questsCompleted += newlyCompleted;
     }
 }
 
@@ -333,6 +355,7 @@ void MainWindow::createRole() {
         return;
     }
 
+    flushStatistics();
     player = Character(name.toStdString());
     hasCreatedRole = true;
     dailyStartKillCount = 0;
@@ -349,6 +372,7 @@ void MainWindow::createRole() {
     quests = Quest::createDefaultQuests();
     enemies = Enemy::createDefaultEnemies();
     killCount = 0;
+    initializeStatisticsForNewRole();
 
     backpack.push_back(Item("面包", ItemType::Food, 20, 20, "恢复 20 点生命值"));
     backpack.push_back(Item("牛奶", ItemType::Food, 30, 30, "恢复 30 点生命值"));
@@ -411,6 +435,11 @@ void MainWindow::showShopList() {
     connect(&dialog, &ShopDialog::logRequested,
             this, [this](const QString &message) {
                 addLog(message);
+            });
+
+    connect(&dialog, &ShopDialog::goldChangedBy,
+            this, [this](int amount) {
+                recordGoldTransaction(amount);
             });
 
     dialog.exec();
@@ -515,6 +544,8 @@ void MainWindow::startCampusBattle(int enemyIndex) {
 
     battleDialog.exec();
 
+    statistics.totalBattles++;
+
     if (battleDialog.wasVictory()) {
         addLog("战斗胜利，击败了：" + battleDialog.enemyName());
 
@@ -526,16 +557,23 @@ void MainWindow::startCampusBattle(int enemyIndex) {
 
         player.addExp(battleDialog.expReward());
         player.addGold(battleDialog.goldReward());
+        recordGoldTransaction(battleDialog.goldReward());
         killCount++;
+        statistics.battleWins++;
+        statistics.totalKills++;
+        statistics.enemyKillCounts[battleDialog.enemyName()]++;
+        recordCurrentGrowth("战斗胜利");
 
         refreshQuests();
     } else if (battleDialog.wasDefeated()) {
+        statistics.battleDefeats++;
         addLog("战斗失败，角色被击败。");
 
         player.revive();
 
         addLog("角色自动恢复部分生命值。");
     } else if (battleDialog.didEscape()) {
+        statistics.battleEscapes++;
         addLog("你从战斗中逃跑了。");
     }
 
@@ -584,6 +622,7 @@ void MainWindow::handleAction1() {
 
         player.useItem(item);
         backpack.erase(backpack.begin() + row);
+        recordCurrentGrowth("使用背包物品");
 
         addLog("使用物品：" + QString::fromStdString(item.getName()));
 
@@ -605,6 +644,7 @@ void MainWindow::handleAction1() {
         }
 
         backpack.push_back(item);
+        recordGoldTransaction(-item.getPrice());
 
         addLog("购买商品成功：" + QString::fromStdString(item.getName()));
 
@@ -674,6 +714,7 @@ void MainWindow::handleAction1() {
             }
         }
 
+        recordCurrentGrowth(row == 0 ? "成长训练" : "角色进化");
         refreshQuests();
     }
 
@@ -711,6 +752,7 @@ void MainWindow::handleAction1() {
         int oldHp = player.getHp();
 
         player.heal(healValue);
+        recordGoldTransaction(-cost);
 
         int realHeal = player.getHp() - oldHp;
 
@@ -785,6 +827,7 @@ void MainWindow::handleAction2() {
 
         backpack.erase(backpack.begin() + index);
         player.addGold(sellPrice);
+        recordGoldTransaction(sellPrice);
 
         addLog("出售物品："
                + QString::fromStdString(item.getName())
@@ -802,10 +845,13 @@ void MainWindow::handleAction2() {
         }
 
         bool beforeClaimed = quests[row].isRewardClaimed();
+        const int goldBefore = player.getGold();
 
         quests[row].claimReward(player);
 
         if (!beforeClaimed && quests[row].isRewardClaimed()) {
+            recordGoldTransaction(player.getGold() - goldBefore);
+            recordCurrentGrowth("任务奖励");
             addLog("领取任务奖励成功："
                    + QString::fromStdString(quests[row].getName()));
         } else {
@@ -868,6 +914,8 @@ void MainWindow::handleAction2() {
 }
 
 void MainWindow::saveGame() {
+    flushStatistics();
+
     bool success = FileManager::saveGame(
         saveFileName.toStdString(),
         player,
@@ -910,6 +958,8 @@ void MainWindow::loadGame() {
         fileName = saveFileName;
     }
 
+    flushStatistics();
+
     bool success = FileManager::loadGame(
         fileName.toStdString(),
         player,
@@ -922,6 +972,7 @@ void MainWindow::loadGame() {
         hasCreatedRole = true;
         dailyStartKillCount = killCount;
         dailyStartLevel = player.getLevel();
+        loadStatisticsForCurrentRole();
 
         updateRoleStatus();
         refreshQuests();
@@ -934,6 +985,120 @@ void MainWindow::loadGame() {
         QMessageBox::warning(this, "读取失败", "没有找到有效存档：" + fileName);
     }
 }
+void MainWindow::openStatisticsDialog()
+{
+    if (!hasCreatedRole) {
+        QMessageBox::information(this,
+                                 "数据中心",
+                                 "请先创建角色或读取存档。\n"
+                                 "产生游戏数据后才能进行统计分析。");
+        return;
+    }
+
+    recordCurrentGrowth("查看数据中心");
+    flushStatistics();
+
+    StatisticsDialog dialog(statistics, player, this);
+    dialog.exec();
+}
+
+void MainWindow::initializeStatisticsForNewRole()
+{
+    statistics.reset(QString::fromStdString(player.getName()));
+    statisticsPlayBaseSeconds = 0;
+    statisticsSessionStartSeconds = gameSeconds;
+    recordCurrentGrowth("创建角色");
+    flushStatistics();
+}
+
+void MainWindow::loadStatisticsForCurrentRole()
+{
+    const QString characterName = QString::fromStdString(player.getName());
+    bool loaded = false;
+    QString errorMessage;
+
+    statistics = GameStatistics::loadForCharacter(
+        characterName, &loaded, &errorMessage);
+
+    if (!errorMessage.isEmpty()) {
+        qWarning() << errorMessage;
+    }
+
+    statistics.characterName = characterName;
+    statistics.totalKills = std::max(statistics.totalKills, killCount);
+    statistics.questsCompleted =
+        std::max(statistics.questsCompleted, completedQuestCount());
+    statisticsPlayBaseSeconds = statistics.totalPlaySeconds;
+    statisticsSessionStartSeconds = gameSeconds;
+
+    recordCurrentGrowth(loaded ? "读取存档" : "导入旧存档");
+    flushStatistics();
+}
+
+void MainWindow::updateStatisticsPlayTime()
+{
+    if (!hasCreatedRole) {
+        return;
+    }
+
+    const int sessionSeconds =
+        std::max(0, gameSeconds - statisticsSessionStartSeconds);
+    statistics.totalPlaySeconds =
+        statisticsPlayBaseSeconds + static_cast<qint64>(sessionSeconds);
+}
+
+void MainWindow::flushStatistics()
+{
+    if (!hasCreatedRole) {
+        return;
+    }
+
+    updateStatisticsPlayTime();
+    statistics.characterName = QString::fromStdString(player.getName());
+    statistics.totalKills = std::max(statistics.totalKills, killCount);
+
+    QString errorMessage;
+    if (!statistics.save(&errorMessage)) {
+        qWarning() << "统计数据保存失败：" << errorMessage;
+        return;
+    }
+
+    statisticsPlayBaseSeconds = statistics.totalPlaySeconds;
+    statisticsSessionStartSeconds = gameSeconds;
+}
+
+void MainWindow::recordCurrentGrowth(const QString &reason)
+{
+    if (!hasCreatedRole) {
+        return;
+    }
+
+    updateStatisticsPlayTime();
+    statistics.recordGrowth(player, statistics.totalPlaySeconds, reason);
+}
+
+void MainWindow::recordGoldTransaction(int amount)
+{
+    if (!hasCreatedRole || amount == 0) {
+        return;
+    }
+
+    if (amount > 0) {
+        statistics.goldEarned += amount;
+    } else {
+        statistics.goldSpent += -amount;
+    }
+}
+
+int MainWindow::completedQuestCount() const
+{
+    return static_cast<int>(std::count_if(
+        quests.cbegin(), quests.cend(),
+        [](const Quest &quest) {
+            return quest.isCompleted();
+        }));
+}
+
 void MainWindow::initStyle() {
     QList<QPushButton*> buttons = this->findChildren<QPushButton*>();
 
@@ -1153,6 +1318,7 @@ void MainWindow::initAutoSave()
 }
 void MainWindow::doAutoSave()
 {
+    flushStatistics();
     GameSnapshot snapshot = createGameSnapshot();
     emit requestAutoSave(snapshot);
 }
@@ -1211,6 +1377,7 @@ void MainWindow::initGameTimer()
 void MainWindow::onGameTimeChanged(int seconds)
 {
     gameSeconds = seconds;
+    updateStatisticsPlayTime();
 
     int hours = seconds / 3600;
     int minutes = (seconds % 3600) / 60;
@@ -1259,6 +1426,7 @@ void MainWindow::handleRandomEvent(int eventType, int value, int enemyIndex, con
 
     if (eventType == 0) {
         player.addGold(value);
+        recordGoldTransaction(value);
         QMessageBox::information(this, "随机事件", "你在路边捡到了 " + QString::number(value) + " 金币。");
         addLog("【随机事件】你捡到了 " + QString::number(value) + " 金币。");
     } else if (eventType == 1) {
@@ -1270,6 +1438,7 @@ void MainWindow::handleRandomEvent(int eventType, int value, int enemyIndex, con
 
         if (realLoss > 0) {
             player.spendGold(realLoss);
+            recordGoldTransaction(-realLoss);
         }
 
         QMessageBox::information(this, "随机事件", "一阵风吹过，你丢失了 " + QString::number(realLoss) + " 金币。");
@@ -1280,6 +1449,7 @@ void MainWindow::handleRandomEvent(int eventType, int value, int enemyIndex, con
         addLog("【随机事件】获得物品：" + itemName + "。");
     } else if (eventType == 3) {
         player.addExp(value);
+        recordCurrentGrowth("随机事件经验");
         QMessageBox::information(this, "随机事件", "你突然进入学习状态，获得经验 " + QString::number(value) + "。");
         addLog("【随机事件】灵感爆发，获得经验 " + QString::number(value) + "。");
     } else if (eventType == 4) {

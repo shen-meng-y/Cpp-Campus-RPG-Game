@@ -15,6 +15,7 @@ class QPropertyAnimation;
 #include "randomeventworker.h"
 #include "gamesnapshot.h"
 #include "autosaveworker.h"
+#include "gamestatistics.h"
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
@@ -53,6 +54,9 @@ private:
 
     int killCount;
     int gameSeconds;
+    GameStatistics statistics;
+    qint64 statisticsPlayBaseSeconds;
+    int statisticsSessionStartSeconds;
     int dailyStartKillCount;
     int dailyStartLevel;
     bool hasCreatedRole;
@@ -98,6 +102,14 @@ private:
     void loadGame();
     void initStyle();
     void showSkillUnlockMessage(int stageValue);
+    void openStatisticsDialog();
+    void initializeStatisticsForNewRole();
+    void loadStatisticsForCurrentRole();
+    void updateStatisticsPlayTime();
+    void flushStatistics();
+    void recordCurrentGrowth(const QString &reason);
+    void recordGoldTransaction(int amount);
+    int completedQuestCount() const;
 private slots:
     void doAutoSave();
     void onAutoSaveFinished(bool success, const QString &message);
