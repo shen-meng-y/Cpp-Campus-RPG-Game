@@ -25,6 +25,7 @@ public:
 signals:
     void shopChanged();
     void logRequested(const QString &message);
+    void goldChangedBy(int amount);
 
 private:
     static const int BackpackCapacity = 20;

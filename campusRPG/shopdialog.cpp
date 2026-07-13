@@ -646,6 +646,7 @@ void ShopDialog::checkout() {
     refreshCartTable();
 
     emit shopChanged();
+    emit goldChangedBy(-total);
     emit logRequested(
         QString("购物车结算成功：%1，共支付 %2 金币。")
             .arg(purchaseSummary.join("、"))
@@ -714,6 +715,7 @@ void ShopDialog::sellBackpackItem() {
     updatePlayerSummary();
 
     emit shopChanged();
+    emit goldChangedBy(sellPrice);
     emit logRequested(
         QString("出售物品：%1，获得 %2 金币。")
             .arg(QString::fromStdString(item.getName()))

@@ -33,6 +33,8 @@ qt_add_executable(campusRPG
     shopdialog.h shopdialog.cpp
     startdialog.h startdialog.cpp
     trainingdialog.h trainingdialog.cpp
+    gamestatistics.h gamestatistics.cpp
+    statisticsdialog.h statisticsdialog.cpp
 
 )
 

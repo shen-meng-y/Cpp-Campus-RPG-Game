@@ -549,8 +549,8 @@ QGroupBox::title {
      <widget class="QPushButton" name="btnSave">
       <property name="geometry">
        <rect>
-        <x>232</x>
-        <y>300</y>
+        <x>230</x>
+        <y>390</y>
         <width>111</width>
         <height>41</height>
        </rect>
@@ -562,14 +562,27 @@ QGroupBox::title {
      <widget class="QPushButton" name="btnLoad">
       <property name="geometry">
        <rect>
-        <x>142</x>
-        <y>387</y>
+        <x>50</x>
+        <y>390</y>
         <width>111</width>
         <height>41</height>
        </rect>
       </property>
       <property name="text">
        <string>读取存档</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btnStatistics">
+      <property name="geometry">
+       <rect>
+        <x>230</x>
+        <y>300</y>
+        <width>111</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>数据中心</string>
       </property>
      </widget>
     </widget>
