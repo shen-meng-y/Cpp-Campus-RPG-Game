@@ -9,6 +9,7 @@
 #include "battlescenedialog.h"
 #include "questdialog.h"
 #include "firstaidcenterdialog.h"
+#include "trainingdialog.h"
 #include "gametimerworker.h"
 #include "randomeventworker.h"
 #include <QInputDialog>
@@ -547,7 +548,7 @@ void MainWindow::showGrowthList() {
     ui->btnAction1->setText("执行操作");
     ui->btnAction2->setText("查看成长");
 
-    ui->listWidget->addItem("1. 训练：获得经验值");
+    ui->listWidget->addItem("1. 训练：30 秒内完成 5 道口算题，全部正确获得经验值");
     ui->listWidget->addItem("2. 进化：达到等级后提升形态并解锁技能");
 
     addLog("已打开成长训练。");
@@ -637,12 +638,22 @@ void MainWindow::handleAction1() {
 
     else if (currentMode == PageMode::Growth) {
         if (row == 0) {
-            int gainedExp = 30 + player.getLevel() * 10;
+            // 保留原有训练经验公式，只改变训练的完成方式。
+            const int gainedExp = 30 + player.getLevel() * 10;
 
-            player.addExp(gainedExp);
+            addLog("开始成长训练：请在 30 秒内完成 5 道口算题。");
 
-            addLog("训练完成，获得经验："
-                   + QString::number(gainedExp));
+            TrainingDialog dialog(gainedExp, this);
+            const int result = dialog.exec();
+
+            if (result == QDialog::Accepted && dialog.trainingSucceeded()) {
+                player.addExp(gainedExp);
+
+                addLog("训练完成，获得经验："
+                       + QString::number(gainedExp));
+            } else {
+                addLog("成长训练未完成，本次未获得经验。");
+            }
         } else if (row == 1) {
             if (!player.canEvolve()) {
                 QMessageBox::information(this, "进化失败", "当前等级不足，暂时无法进化。");

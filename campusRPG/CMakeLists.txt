@@ -31,6 +31,8 @@ qt_add_executable(campusRPG
     questdialog.h questdialog.cpp
     firstaidcenterdialog.h firstaidcenterdialog.cpp
     shopdialog.h shopdialog.cpp
+    startdialog.h startdialog.cpp
+    trainingdialog.h trainingdialog.cpp
 
 )
 
