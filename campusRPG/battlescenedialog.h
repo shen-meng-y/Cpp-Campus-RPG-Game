@@ -3,6 +3,7 @@
 
 #include <QDialog>
 #include <QPixmap>
+#include <QRect>
 
 #include "Character.h"
 #include "Enemy.h"
@@ -12,6 +13,7 @@ class QProgressBar;
 class QPushButton;
 class QTextEdit;
 class QCloseEvent;
+class QPropertyAnimation;
 
 class BattleSceneDialog : public QDialog {
     Q_OBJECT
@@ -51,6 +53,7 @@ private:
     bool defeated;
     bool escaped;
     bool battleEnded;
+    bool animationRunning;
 
     QLabel* sceneLabel;
     QLabel* playerImageLabel;
@@ -69,16 +72,30 @@ private:
     QPushButton* ultimateSkillButton;
     QPushButton* escapeButton;
 
+    QRect playerHomeGeometry;
+    QRect enemyHomeGeometry;
+
+    QPropertyAnimation* playerHpAnimation;
+    QPropertyAnimation* enemyHpAnimation;
+
 private:
     void setupUi();
-    void updateBattleStatus();
+    void updateBattleStatus(bool animateBars = false);
+    void animateHpBar(QProgressBar* bar, int targetHp, int maxHp);
+    void playHitReaction(QLabel* target, const QRect& homeGeometry);
+
     void handleNormalAttack();
     void handleMiddleSkill();
     void handleUltimateSkill();
     void handleEscape();
+
     void performPlayerSkill(const QString& skillName, int damage, const QString& extraText);
     void handleEnemyCounterAttack();
+    void finishVictory();
+    void finishDefeat();
+
     void setSkillButtonsEnabled(bool enabled);
+    void setBattleControlsEnabled(bool enabled);
     void appendBattleLog(const QString& text);
 
     QString imagePath(const QString& fileName) const;

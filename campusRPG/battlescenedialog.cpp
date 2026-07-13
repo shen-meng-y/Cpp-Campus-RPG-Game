@@ -10,6 +10,12 @@
 #include <QPixmap>
 #include <QCoreApplication>
 #include <QCloseEvent>
+#include <QPropertyAnimation>
+#include <QSequentialAnimationGroup>
+#include <QPauseAnimation>
+#include <QEasingCurve>
+#include <QTimer>
+#include <algorithm>
 
 BattleSceneDialog::BattleSceneDialog(
     Character& player,
@@ -30,6 +36,7 @@ BattleSceneDialog::BattleSceneDialog(
     defeated(false),
     escaped(false),
     battleEnded(false),
+    animationRunning(false),
     sceneLabel(nullptr),
     playerImageLabel(nullptr),
     enemyImageLabel(nullptr),
@@ -41,9 +48,11 @@ BattleSceneDialog::BattleSceneDialog(
     normalAttackButton(nullptr),
     middleSkillButton(nullptr),
     ultimateSkillButton(nullptr),
-    escapeButton(nullptr) {
+    escapeButton(nullptr),
+    playerHpAnimation(nullptr),
+    enemyHpAnimation(nullptr) {
     setupUi();
-    updateBattleStatus();
+    updateBattleStatus(false);
 }
 
 QString BattleSceneDialog::imagePath(const QString& fileName) const {
@@ -129,6 +138,9 @@ void BattleSceneDialog::setupUi() {
     playerImageLabel->raise();
     enemyImageLabel->raise();
 
+    playerHomeGeometry = playerImageLabel->geometry();
+    enemyHomeGeometry = enemyImageLabel->geometry();
+
     // =========================
     // 血量区域
     // =========================
@@ -162,6 +174,20 @@ void BattleSceneDialog::setupUi() {
 
     playerHpBar->setFixedHeight(28);
     enemyHpBar->setFixedHeight(28);
+
+    // 进度条数值改变时同步刷新文字与颜色。
+    // QPropertyAnimation 修改 value 后，血条会连续变化，而不是直接跳到目标值。
+    connect(playerHpBar, &QProgressBar::valueChanged, this, [this](int value) {
+        const int maxHp = playerHpBar->maximum();
+        playerHpBar->setFormat(QString("HP %1 / %2").arg(value).arg(maxHp));
+        playerHpBar->setStyleSheet(hpBarStyle(value, maxHp));
+    });
+
+    connect(enemyHpBar, &QProgressBar::valueChanged, this, [this](int value) {
+        const int maxHp = enemyHpBar->maximum();
+        enemyHpBar->setFormat(QString("HP %1 / %2").arg(value).arg(maxHp));
+        enemyHpBar->setStyleSheet(hpBarStyle(value, maxHp));
+    });
 
     playerStatusLayout->addWidget(playerHpText);
     playerStatusLayout->addWidget(playerHpBar);
@@ -242,6 +268,11 @@ void BattleSceneDialog::setupUi() {
         "}"
         "QPushButton:pressed {"
         "   background-color: #d8cee9;"
+        "}"
+        "QPushButton:disabled {"
+        "   color: #999999;"
+        "   background-color: #e5e5e5;"
+        "   border-color: #d0d0d0;"
         "}"
         );
 
@@ -326,67 +357,202 @@ void BattleSceneDialog::performPlayerSkill(
     int damage,
     const QString& extraText
     ) {
+    if (battleEnded || animationRunning) {
+        return;
+    }
+
+    animationRunning = true;
+    setBattleControlsEnabled(false);
+
+    // 玩家向右前冲，再返回原位。
+    QRect attackGeometry = playerHomeGeometry.translated(175, -6);
+
+    QSequentialAnimationGroup* attackGroup = new QSequentialAnimationGroup(this);
+
+    QPropertyAnimation* forwardAnimation =
+        new QPropertyAnimation(playerImageLabel, "geometry", attackGroup);
+    forwardAnimation->setDuration(180);
+    forwardAnimation->setStartValue(playerHomeGeometry);
+    forwardAnimation->setEndValue(attackGeometry);
+    forwardAnimation->setEasingCurve(QEasingCurve::OutCubic);
+
+    QPauseAnimation* hitPause = new QPauseAnimation(70, attackGroup);
+
+    QPropertyAnimation* returnAnimation =
+        new QPropertyAnimation(playerImageLabel, "geometry", attackGroup);
+    returnAnimation->setDuration(220);
+    returnAnimation->setStartValue(attackGeometry);
+    returnAnimation->setEndValue(playerHomeGeometry);
+    returnAnimation->setEasingCurve(QEasingCurve::InOutQuad);
+
+    attackGroup->addAnimation(forwardAnimation);
+    attackGroup->addAnimation(hitPause);
+    attackGroup->addAnimation(returnAnimation);
+
+    // 到达前冲终点时才结算伤害，视觉动作与数值变化保持一致。
+    connect(forwardAnimation, &QPropertyAnimation::finished, this,
+            [this, skillName, damage, extraText]() {
+                if (battleEnded) {
+                    return;
+                }
+
+                enemy.takeDamage(damage);
+
+                QString logText = "你使用【" + skillName + "】";
+                if (!extraText.isEmpty()) {
+                    logText += "，" + extraText;
+                }
+
+                logText += "，对 "
+                           + QString::fromStdString(enemy.getName())
+                           + " 造成 "
+                           + QString::number(damage)
+                           + " 点伤害。";
+
+                appendBattleLog(logText);
+                updateBattleStatus(true);
+                playHitReaction(enemyImageLabel, enemyHomeGeometry);
+            });
+
+    connect(attackGroup, &QSequentialAnimationGroup::finished, this, [this]() {
+        playerImageLabel->setGeometry(playerHomeGeometry);
+
+        if (battleEnded) {
+            return;
+        }
+
+        if (!enemy.isAlive()) {
+            QTimer::singleShot(100, this, [this]() {
+                if (!battleEnded) {
+                    finishVictory();
+                }
+            });
+            return;
+        }
+
+        // 留出少量停顿，使双方攻击不显得挤在一起。
+        QTimer::singleShot(160, this, [this]() {
+            if (!battleEnded) {
+                handleEnemyCounterAttack();
+            }
+        });
+    });
+
+    attackGroup->start(QAbstractAnimation::DeleteWhenStopped);
+}
+
+void BattleSceneDialog::handleEnemyCounterAttack() {
     if (battleEnded) {
         return;
     }
 
-    enemy.takeDamage(damage);
+    // 敌人向左前冲，再返回原位。
+    QRect attackGeometry = enemyHomeGeometry.translated(-175, 6);
 
-    QString logText = "你使用【" + skillName + "】";
+    QSequentialAnimationGroup* attackGroup = new QSequentialAnimationGroup(this);
 
-    if (!extraText.isEmpty()) {
-        logText += "，" + extraText;
-    }
+    QPropertyAnimation* forwardAnimation =
+        new QPropertyAnimation(enemyImageLabel, "geometry", attackGroup);
+    forwardAnimation->setDuration(190);
+    forwardAnimation->setStartValue(enemyHomeGeometry);
+    forwardAnimation->setEndValue(attackGeometry);
+    forwardAnimation->setEasingCurve(QEasingCurve::OutCubic);
 
-    logText += "，对 "
-               + QString::fromStdString(enemy.getName())
-               + " 造成 "
-               + QString::number(damage)
-               + " 点伤害。";
+    QPauseAnimation* hitPause = new QPauseAnimation(70, attackGroup);
 
-    appendBattleLog(logText);
+    QPropertyAnimation* returnAnimation =
+        new QPropertyAnimation(enemyImageLabel, "geometry", attackGroup);
+    returnAnimation->setDuration(220);
+    returnAnimation->setStartValue(attackGeometry);
+    returnAnimation->setEndValue(enemyHomeGeometry);
+    returnAnimation->setEasingCurve(QEasingCurve::InOutQuad);
 
-    updateBattleStatus();
+    attackGroup->addAnimation(forwardAnimation);
+    attackGroup->addAnimation(hitPause);
+    attackGroup->addAnimation(returnAnimation);
 
-    if (!enemy.isAlive()) {
-        victory = true;
-        battleEnded = true;
+    connect(forwardAnimation, &QPropertyAnimation::finished, this, [this]() {
+        if (battleEnded) {
+            return;
+        }
 
-        appendBattleLog("战斗胜利！你击败了 " + QString::fromStdString(enemy.getName()) + "。");
+        const int damage = enemy.getAttack();
+        player.takeDamage(damage);
 
-        setSkillButtonsEnabled(false);
-        escapeButton->setText("结束战斗");
-        return;
-    }
+        appendBattleLog(
+            QString::fromStdString(enemy.getName())
+            + " 反击，对你造成 "
+            + QString::number(damage)
+            + " 点伤害。"
+            );
 
-    handleEnemyCounterAttack();
+        updateBattleStatus(true);
+        playHitReaction(playerImageLabel, playerHomeGeometry);
+    });
+
+    connect(attackGroup, &QSequentialAnimationGroup::finished, this, [this]() {
+        enemyImageLabel->setGeometry(enemyHomeGeometry);
+
+        if (battleEnded) {
+            return;
+        }
+
+        // 等待平滑血条基本结束后，再开放下一次操作。
+        QTimer::singleShot(100, this, [this]() {
+            if (battleEnded) {
+                return;
+            }
+
+            if (!player.isAlive()) {
+                finishDefeat();
+                return;
+            }
+
+            animationRunning = false;
+            setBattleControlsEnabled(true);
+        });
+    });
+
+    attackGroup->start(QAbstractAnimation::DeleteWhenStopped);
 }
 
-void BattleSceneDialog::handleEnemyCounterAttack() {
-    player.takeDamage(enemy.getAttack());
-
-    appendBattleLog(
-        QString::fromStdString(enemy.getName())
-        + " 反击，对你造成 "
-        + QString::number(enemy.getAttack())
-        + " 点伤害。"
-        );
-
-    updateBattleStatus();
-
-    if (!player.isAlive()) {
-        defeated = true;
-        battleEnded = true;
-
-        appendBattleLog("战斗失败，你被击败了。");
-
-        setSkillButtonsEnabled(false);
-        escapeButton->setText("返回");
+void BattleSceneDialog::finishVictory() {
+    if (battleEnded) {
         return;
     }
+
+    victory = true;
+    battleEnded = true;
+    animationRunning = false;
+
+    appendBattleLog("战斗胜利！你击败了 " + QString::fromStdString(enemy.getName()) + "。");
+
+    setSkillButtonsEnabled(false);
+    escapeButton->setEnabled(true);
+    escapeButton->setText("结束战斗");
+}
+
+void BattleSceneDialog::finishDefeat() {
+    if (battleEnded) {
+        return;
+    }
+
+    defeated = true;
+    battleEnded = true;
+    animationRunning = false;
+
+    appendBattleLog("战斗失败，你被击败了。");
+
+    setSkillButtonsEnabled(false);
+    escapeButton->setEnabled(true);
+    escapeButton->setText("返回");
 }
 
 void BattleSceneDialog::handleEscape() {
+    if (animationRunning) {
+        return;
+    }
+
     if (battleEnded) {
         accept();
         return;
@@ -401,19 +567,11 @@ void BattleSceneDialog::handleEscape() {
     escapeButton->setText("返回");
 }
 
-void BattleSceneDialog::updateBattleStatus() {
-    int playerHp = player.getHp();
-    int playerMaxHp = player.getMaxHp();
-
-    if (playerHp < 0) {
-        playerHp = 0;
-    }
-
-    int enemyHp = enemy.getHp();
-
-    if (enemyHp < 0) {
-        enemyHp = 0;
-    }
+void BattleSceneDialog::updateBattleStatus(bool animateBars) {
+    const int playerMaxHp = std::max(0, player.getMaxHp());
+    const int playerHp = std::clamp(player.getHp(), 0, playerMaxHp);
+    const int safeEnemyMaxHp = std::max(0, enemyMaxHp);
+    const int enemyHp = std::clamp(enemy.getHp(), 0, safeEnemyMaxHp);
 
     playerHpText->setText(
         "我的血量："
@@ -427,20 +585,111 @@ void BattleSceneDialog::updateBattleStatus() {
         + " 血量："
         + QString::number(enemyHp)
         + " / "
-        + QString::number(enemyMaxHp)
+        + QString::number(safeEnemyMaxHp)
         );
 
-    playerHpBar->setMinimum(0);
-    playerHpBar->setMaximum(playerMaxHp);
-    playerHpBar->setValue(playerHp);
-    playerHpBar->setFormat(QString("HP %1 / %2").arg(playerHp).arg(playerMaxHp));
-    playerHpBar->setStyleSheet(hpBarStyle(playerHp, playerMaxHp));
+    playerHpBar->setRange(0, playerMaxHp);
+    enemyHpBar->setRange(0, safeEnemyMaxHp);
 
-    enemyHpBar->setMinimum(0);
-    enemyHpBar->setMaximum(enemyMaxHp);
-    enemyHpBar->setValue(enemyHp);
-    enemyHpBar->setFormat(QString("HP %1 / %2").arg(enemyHp).arg(enemyMaxHp));
-    enemyHpBar->setStyleSheet(hpBarStyle(enemyHp, enemyMaxHp));
+    if (animateBars) {
+        animateHpBar(playerHpBar, playerHp, playerMaxHp);
+        animateHpBar(enemyHpBar, enemyHp, safeEnemyMaxHp);
+    } else {
+        playerHpBar->setValue(playerHp);
+        enemyHpBar->setValue(enemyHp);
+
+        playerHpBar->setFormat(QString("HP %1 / %2").arg(playerHp).arg(playerMaxHp));
+        enemyHpBar->setFormat(QString("HP %1 / %2").arg(enemyHp).arg(safeEnemyMaxHp));
+
+        playerHpBar->setStyleSheet(hpBarStyle(playerHp, playerMaxHp));
+        enemyHpBar->setStyleSheet(hpBarStyle(enemyHp, safeEnemyMaxHp));
+    }
+}
+
+void BattleSceneDialog::animateHpBar(QProgressBar* bar, int targetHp, int maxHp) {
+    if (!bar) {
+        return;
+    }
+
+    targetHp = std::clamp(targetHp, 0, std::max(0, maxHp));
+
+    QPropertyAnimation*& currentAnimation =
+        (bar == playerHpBar) ? playerHpAnimation : enemyHpAnimation;
+
+    if (currentAnimation) {
+        currentAnimation->stop();
+        currentAnimation->deleteLater();
+        currentAnimation = nullptr;
+    }
+
+    if (bar->value() == targetHp) {
+        bar->setFormat(QString("HP %1 / %2").arg(targetHp).arg(maxHp));
+        bar->setStyleSheet(hpBarStyle(targetHp, maxHp));
+        return;
+    }
+
+    QPropertyAnimation* animation = new QPropertyAnimation(bar, "value", this);
+    currentAnimation = animation;
+
+    animation->setDuration(360);
+    animation->setStartValue(bar->value());
+    animation->setEndValue(targetHp);
+    animation->setEasingCurve(QEasingCurve::OutCubic);
+
+    const bool isPlayerBar = (bar == playerHpBar);
+
+    connect(animation, &QPropertyAnimation::finished, this,
+            [this, animation, bar, targetHp, maxHp, isPlayerBar]() {
+                bar->setValue(targetHp);
+                bar->setFormat(QString("HP %1 / %2").arg(targetHp).arg(maxHp));
+                bar->setStyleSheet(hpBarStyle(targetHp, maxHp));
+
+                if (isPlayerBar) {
+                    if (playerHpAnimation == animation) {
+                        playerHpAnimation = nullptr;
+                    }
+                } else if (enemyHpAnimation == animation) {
+                    enemyHpAnimation = nullptr;
+                }
+
+                animation->deleteLater();
+            });
+
+    animation->start();
+}
+
+void BattleSceneDialog::playHitReaction(QLabel* target, const QRect& homeGeometry) {
+    if (!target) {
+        return;
+    }
+
+    QSequentialAnimationGroup* reactionGroup = new QSequentialAnimationGroup(this);
+
+    const QRect rightGeometry = homeGeometry.translated(9, 0);
+    const QRect leftGeometry = homeGeometry.translated(-9, 0);
+
+    auto addShakeStep = [reactionGroup, target](
+                            const QRect& start,
+                            const QRect& end,
+                            int duration) {
+        QPropertyAnimation* step = new QPropertyAnimation(target, "geometry", reactionGroup);
+        step->setDuration(duration);
+        step->setStartValue(start);
+        step->setEndValue(end);
+        step->setEasingCurve(QEasingCurve::InOutQuad);
+        reactionGroup->addAnimation(step);
+    };
+
+    addShakeStep(homeGeometry, rightGeometry, 45);
+    addShakeStep(rightGeometry, leftGeometry, 70);
+    addShakeStep(leftGeometry, homeGeometry, 55);
+
+    connect(reactionGroup, &QSequentialAnimationGroup::finished, this,
+            [target, homeGeometry]() {
+                target->setGeometry(homeGeometry);
+            });
+
+    reactionGroup->start(QAbstractAnimation::DeleteWhenStopped);
 }
 
 QString BattleSceneDialog::hpBarStyle(int currentHp, int maxHp) const {
@@ -491,6 +740,14 @@ void BattleSceneDialog::setSkillButtonsEnabled(bool enabled) {
     }
 }
 
+void BattleSceneDialog::setBattleControlsEnabled(bool enabled) {
+    setSkillButtonsEnabled(enabled && !battleEnded);
+
+    if (escapeButton) {
+        escapeButton->setEnabled(enabled);
+    }
+}
+
 void BattleSceneDialog::appendBattleLog(const QString& text) {
     battleLog->append("◆ " + text);
 }
@@ -525,5 +782,6 @@ void BattleSceneDialog::closeEvent(QCloseEvent* event) {
         battleEnded = true;
     }
 
+    animationRunning = false;
     QDialog::closeEvent(event);
 }
