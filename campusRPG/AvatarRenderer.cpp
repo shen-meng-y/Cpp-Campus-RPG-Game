@@ -4,11 +4,40 @@
 #include <QString>
 #include <QDir>
 #include <QFileInfo>
+#include <QCoreApplication>
+#include <QStringList>
 #include <QDebug>
 
+static QString avatarAssetDir() {
+    const QString appDir = QCoreApplication::applicationDirPath();
+
+    const QStringList candidates = {
+        QDir(appDir).filePath("images/avatar"),
+        QDir(appDir).filePath("images"),
+        QDir(appDir).filePath("avatar"),
+        QDir(appDir).filePath("assets/avatar"),
+        QDir(appDir).filePath("assets"),
+        appDir
+    };
+
+    for (const QString& dir : candidates) {
+        if (QFileInfo::exists(QDir(dir).filePath("person1.png"))) {
+            return QDir(dir).absolutePath();
+        }
+    }
+
+#ifdef AVATAR_ASSET_DIR
+    const QString configuredDir = QString::fromUtf8(AVATAR_ASSET_DIR);
+    if (QFileInfo::exists(QDir(configuredDir).filePath("person1.png"))) {
+        return QDir(configuredDir).absolutePath();
+    }
+#endif
+
+    return QDir(appDir).filePath("images");
+}
+
 static QString avatarFilePath(const QString& fileName) {
-    QString dir = QString::fromUtf8(AVATAR_ASSET_DIR);
-    return QDir(dir).filePath(fileName);
+    return QDir(avatarAssetDir()).filePath(fileName);
 }
 
 QPixmap AvatarRenderer::render(
