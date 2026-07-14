@@ -8,11 +8,43 @@
 #include <QPixmap>
 #include <QDir>
 #include <QFileInfo>
+#include <QCoreApplication>
+#include <QStringList>
 #include <QDebug>
 
+static QString avatarAssetDir() {
+    const QString appDir = QCoreApplication::applicationDirPath();
+
+    // 优先从 exe 附近查找素材，换电脑后仍然有效。
+    const QStringList candidates = {
+        QDir(appDir).filePath("images/avatar"),
+        QDir(appDir).filePath("images"),
+        QDir(appDir).filePath("avatar"),
+        QDir(appDir).filePath("assets/avatar"),
+        QDir(appDir).filePath("assets"),
+        appDir
+    };
+
+    for (const QString& dir : candidates) {
+        if (QFileInfo::exists(QDir(dir).filePath("bg_room.png"))) {
+            return QDir(dir).absolutePath();
+        }
+    }
+
+#ifdef AVATAR_ASSET_DIR
+    // 仅作为本机开发环境的兼容后备，不再依赖它进行部署。
+    const QString configuredDir = QString::fromUtf8(AVATAR_ASSET_DIR);
+    if (QFileInfo::exists(QDir(configuredDir).filePath("bg_room.png"))) {
+        return QDir(configuredDir).absolutePath();
+    }
+#endif
+
+    // 默认约定：素材放在 exe 同级的 images 文件夹中。
+    return QDir(appDir).filePath("images");
+}
+
 static QString avatarFilePath(const QString& fileName) {
-    QString dir = QString::fromUtf8(AVATAR_ASSET_DIR);
-    return QDir(dir).filePath(fileName);
+    return QDir(avatarAssetDir()).filePath(fileName);
 }
 
 AvatarDressDialog::AvatarDressDialog(QWidget* parent)
@@ -34,7 +66,7 @@ AvatarDressDialog::AvatarDressDialog(QWidget* parent)
     shoeStyle(1) {
     setupUi();
 
-    qDebug() << "素材目录:" << QString::fromUtf8(AVATAR_ASSET_DIR);
+    qDebug() << "素材目录:" << avatarAssetDir();
     qDebug() << "bg_room exists:" << QFileInfo::exists(avatarFilePath("bg_room.png"));
     qDebug() << "person1 exists:" << QFileInfo::exists(avatarFilePath("person1.png"));
     qDebug() << "dress1 exists:" << QFileInfo::exists(avatarFilePath("dress1.png"));
